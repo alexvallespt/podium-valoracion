@@ -33,10 +33,17 @@ export interface Visit {
   }
 }
 
+export type SessionData = {
+  username: string
+  role: StaffRole
+  login: number
+}
+
 interface Store {
   visits: Record<string, Visit>
   staff: Record<string, StaffUser> // by id
   staffByUsername: Record<string, string> // username -> id
+  sessions: Record<string, SessionData>   // sid -> sesión (admin o staff)
 }
 
 /* =========================
@@ -46,7 +53,7 @@ declare global {
   // eslint-disable-next-line no-var
   var __PODIUM_STORE: Store | undefined
 }
-const defaultStore: Store = { visits: {}, staff: {}, staffByUsername: {} }
+const defaultStore: Store = { visits: {}, staff: {}, staffByUsername: {}, sessions: {} }
 
 export function getStore(): Store {
   if (!global.__PODIUM_STORE) global.__PODIUM_STORE = defaultStore
@@ -139,6 +146,11 @@ export function getStaffByUsername(username: string): StaffUser | undefined {
   return id ? s.staff[id] : undefined
 }
 
+export function getStaffByEmail(email: string): StaffUser | undefined {
+  const e = email.trim().toLowerCase()
+  return listStaffUsers().find(u => (u.email || '').toLowerCase() === e)
+}
+
 export function countAdmins(): number {
   return listStaffUsers().filter(u => u.role === 'admin').length
 }
@@ -220,6 +232,15 @@ export function verifyStaffCredentials(username: string, password: string): Staf
   }
 
   return null
+}
+
+/** Login aceptando username **o** email */
+export function verifyStaffCredentialsByLogin(login: string, password: string): StaffUser | null {
+  const byUser = getStaffByUsername(login)
+  const byMail = getStaffByEmail(login)
+  const user = byUser || byMail
+  if (!user) return null
+  return verifyStaffCredentials(user.username, password)
 }
 
 /* =========================
