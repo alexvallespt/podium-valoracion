@@ -48,7 +48,6 @@ function SignaturePad({ onChange }: { onChange: (dataUrl: string) => void }) {
       clientX = t.clientX
       clientY = t.clientY
     } else {
-      // ReactMouseEvent ya expone clientX/clientY
       clientX = (e as ReactMouseEvent<HTMLCanvasElement>).clientX
       clientY = (e as ReactMouseEvent<HTMLCanvasElement>).clientY
     }
@@ -385,10 +384,10 @@ export default function Intake() {
 
   return (
     <form onSubmit={onSubmit} className="space-y-4 max-w-3xl mx-auto p-4">
-      {/* Header con barra; key fuerza re-mount al cambiar de paso (asegura animación/actualización) */}
-      <div className="sticky top-0 z-10 bg-gray-50/80 backdrop-blur py-3" key={clampedStep}>
+      {/* Header con barra + aviso para modo oscuro */}
+      <div className="sticky top-0 z-10 bg-white/90 backdrop-blur py-3 border-b" key={clampedStep}>
         <div className="flex items-center justify-between">
-          <h1 className="text-xl font-bold">Anamnesis – Clínica Podium</h1>
+          <h1 className="text-xl font-bold text-gray-900">Anamnesis – Clínica Podium</h1>
           <div className="w-48">
             <div className="w-full h-2 bg-gray-200 rounded-full overflow-hidden">
               <div
@@ -398,18 +397,24 @@ export default function Intake() {
             </div>
           </div>
         </div>
-        <p className="text-xs text-gray-600 mt-1">
+        <p className="text-xs text-gray-700 mt-1">
           Progreso: {percent}% · Paso {currentStepDisplay}/{totalSteps}
+        </p>
+        {/* Aviso solo visible en modo oscuro del sistema */}
+        <p className="hidden dark:block text-[13px] text-red-600 mt-1">
+          Si no ves con claridad el formulario, desactiva el modo oscuro de tu móvil.
         </p>
       </div>
 
       {clampedStep < sections.length ? (
         <>
-          <p className="text-sm text-gray-600">{pepTalks[Math.min(pepTalks.length - 1, clampedStep)]}</p>
-          <FormRenderer sections={[sections[clampedStep]]} values={values} onChange={setValues} />
+          <p className="text-sm text-gray-700">{pepTalks[Math.min(pepTalks.length - 1, clampedStep)]}</p>
+          <div className="bg-white text-gray-900 rounded-xl shadow">
+            <FormRenderer sections={[sections[clampedStep]]} values={values} onChange={setValues} />
+          </div>
         </>
       ) : (
-        <section className="bg-white p-4 rounded-xl shadow space-y-2">
+        <section className="bg-white text-gray-900 p-4 rounded-xl shadow space-y-2">
           <h2 className="text-lg font-semibold">Consentimiento RGPD/LOPDGDD</h2>
           <p className="text-sm text-gray-700">
             {pepTalks[pepTalks.length - 1]}
@@ -444,7 +449,9 @@ export default function Intake() {
         )}
       </div>
 
-      <p className="text-xs text-gray-500 text-center">Guardado automático activado · Si cierras la página, podrás continuar después.</p>
+      <p className="text-xs text-gray-600 text-center">
+        Guardado automático activado · Si cierras la página, podrás continuar después.
+      </p>
     </form>
   )
 }

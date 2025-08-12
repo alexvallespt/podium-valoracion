@@ -1,3 +1,6 @@
+import { upsertPatientFromIntake } from '../../lib/store';
+// ...
+upsertPatientFromIntake(String(visitId), intake);
 
 import type { NextApiRequest, NextApiResponse } from 'next'
 import { getOrCreateVisit } from '../../lib/store'

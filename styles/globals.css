@@ -1,8 +1,11 @@
 @import "tailwindcss";
 
+/* — Modo claro/oscuro automático — */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* permite que el navegador elija claro u oscuro según el sistema */
+  color-scheme: light dark;
+  --background: #ffffff;        /* fondo general */
+  --foreground: #111827;        /* texto general (casi negro) */
 }
 
 @theme inline {
@@ -12,15 +15,46 @@
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+html, body, #__next {
+  height: 100%;
+  background: var(--background) !important;
+  color: var(--foreground) !important;
+  font-family: Arial, Helvetica, sans-serif;
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+/* Controles (siempre legibles) */
+input, textarea, select {
+  background: #ffffff !important;
+  color: #111827 !important;
+  border: 1px solid #D1D5DB !important; /* gray-300 */
+}
+label { color: #111827 !important; }
+
+/* Tarjetas reutilizables */
+.section-card {
+  background: #ffffff;
+  color: #111827;
+  border: 1px solid #E5E7EB;   /* gray-200 */
+  border-radius: 0.75rem;
+}
+
+/* — Ajustes específicos para MODO OSCURO — */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #0a0a0a;      /* fondo general oscuro */
+    --foreground: #E5E7EB;      /* texto general claro */
+  }
+
+  /* Mantén cajas e inputs en blanco y texto negro (evita blanco sobre blanco) */
+  .bg-white,
+  .section-card,
+  input, textarea, select {
+    background: #ffffff !important;
+    color: #111827 !important;
+    border-color: #4B5563 !important;   /* gray-600, más contraste */
+  }
+
+  /* (opcional) si usas clases para la barra de progreso */
+  .progress-track { background: #1F2937; } /* gray-800 */
+  .progress-fill  { background: #ffffff; }
 }

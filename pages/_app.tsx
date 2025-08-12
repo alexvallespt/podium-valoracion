@@ -1,12 +1,16 @@
-import type { AppProps } from 'next/app'
-import '../styles/globals.css'
-import TopBar from '../components/TopBar'
+// pages/_app.tsx
+import type { AppProps } from 'next/app';
+import '../styles/globals.css';
+import TopBar from '../components/TopBar';
 
 export default function MyApp({ Component, pageProps }: AppProps) {
+  // Forzamos fondo claro y texto negro para evitar problemas con modo oscuro del móvil
   return (
-    <>
+    <div className="min-h-screen bg-white text-black">
       <TopBar />
-      <Component {...pageProps} />
-    </>
-  )
+      <main className="max-w-5xl mx-auto px-4">
+        <Component {...pageProps} />
+      </main>
+    </div>
+  );
 }
