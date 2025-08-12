@@ -1,3 +1,4 @@
+import Link from 'next/link'
 import Image from "next/image";
 import { useRouter } from "next/router";
 import { useState } from "react";
@@ -40,19 +41,19 @@ export default function Home() {
             NUEVA ANAMNESIS
           </button>
 
-          <a
+          <link
             href="/staff/login"
             className="block w-full py-4 rounded-2xl bg-white text-black text-lg font-semibold border shadow-md text-center"
           >
             ACCESO STAFF
-          </a>
+          </link>
 
-          <a
+          <Link
             href="/whatsapp"
             className="block w-full py-4 rounded-2xl bg-emerald-600 text-white text-lg font-semibold shadow-md text-center active:scale-[0.98]"
           >
             ENVIAR WHATSAPP
-          </a>
+          </Link>
         </div>
 
         {/* Campo opcional para usar tu propio ID al crear la anamnesis desde aquí */}
