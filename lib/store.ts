@@ -63,20 +63,23 @@ export function getStore(): Store {
 /* =========================
  * VISITS
  * ========================= */
-export function getOrCreateVisit(id: string): Visit {
-  const s = getStore()
-  if (!s.visits[id]) s.visits[id] = { id, createdAt: new Date().toISOString() }
-  return s.visits[id]
+// lib/store.ts  (solo fragmento)
+export interface Visit {
+  id: string
+  createdAt: string
+  bodyRegion?: string
+  patient?: { firstName?: string; lastName?: string; email?: string; phone?: string }
+  intake?: Record<string, unknown>
+  ddxJSON?: { ddx: Array<{ label: string; prob: number; why?: string }> }
+  consent?: {
+    email: string
+    text: string
+    signaturePng: string
+    at: string
+  }
+  assessment?: Record<string, unknown>   // <-- AÑADIDO
 }
 
-export function saveVisit(v: Visit) {
-  const s = getStore()
-  s.visits[v.id] = v
-}
-
-export function listVisits(): Visit[] {
-  return Object.values(getStore().visits).sort((a, b) => (a.createdAt > b.createdAt ? -1 : 1))
-}
 
 /* =========================
  * Password helpers
