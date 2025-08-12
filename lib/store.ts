@@ -9,11 +9,11 @@ export type StaffRole = 'admin' | 'fisio' | 'aux'
 export interface StaffUser {
   id: string
   name: string
-  username: string // SIEMPRE en minúsculas
+  username: string // en minúsculas
   email?: string
   role: StaffRole
   salt: string
-  passwordHash: string // hash hex
+  passwordHash: string // hex
   active: boolean
   createdAt: string
 }
@@ -31,19 +31,14 @@ export interface Visit {
     signaturePng: string
     at: string
   }
-}
-
-export type SessionData = {
-  username: string
-  role: StaffRole
-  login: number
+  /** <- necesario para /api/assessment */
+  assessment?: Record<string, unknown>
 }
 
 interface Store {
   visits: Record<string, Visit>
   staff: Record<string, StaffUser> // by id
   staffByUsername: Record<string, string> // username -> id
-  sessions: Record<string, SessionData>   // sid -> sesión (admin o staff)
 }
 
 /* =========================
@@ -53,7 +48,7 @@ declare global {
   // eslint-disable-next-line no-var
   var __PODIUM_STORE: Store | undefined
 }
-const defaultStore: Store = { visits: {}, staff: {}, staffByUsername: {}, sessions: {} }
+const defaultStore: Store = { visits: {}, staff: {}, staffByUsername: {} }
 
 export function getStore(): Store {
   if (!global.__PODIUM_STORE) global.__PODIUM_STORE = defaultStore
@@ -63,30 +58,31 @@ export function getStore(): Store {
 /* =========================
  * VISITS
  * ========================= */
-export interface Visit {
-  id: string
-  createdAt: string
-  bodyRegion?: string
-  patient?: { firstName?: string; lastName?: string; email?: string; phone?: string }
-  intake?: Record<string, unknown>
-  ddxJSON?: { ddx: Array<{ label: string; prob: number; why?: string }> }
-  consent?: { email: string; text: string; signaturePng: string; at: string }
-  assessment?: Record<string, unknown>   // <-- añade esta línea
+export function getOrCreateVisit(id: string): Visit {
+  const s = getStore()
+  if (!s.visits[id]) s.visits[id] = { id, createdAt: new Date().toISOString() }
+  return s.visits[id]
 }
 
+export function saveVisit(v: Visit) {
+  const s = getStore()
+  s.visits[v.id] = v
+}
 
+export function listVisits(): Visit[] {
+  return Object.values(getStore().visits).sort((a, b) => (a.createdAt > b.createdAt ? -1 : 1))
+}
 
 /* =========================
  * Password helpers
  * ========================= */
-// Hash fuerte por defecto (scrypt). Mantenemos compatibilidad con HMAC-SHA256 legacy.
+// Hash fuerte por defecto (scrypt). Mantiene compatibilidad HMAC-SHA256.
 function hashPasswordScrypt(password: string, salt?: string) {
   const realSalt = salt || randomBytes(16).toString('hex')
   const hash = scryptSync(password, realSalt, 64).toString('hex')
   return { salt: realSalt, hash }
 }
 
-// LEGACY (usado en versiones previas)
 function hashPasswordHmac(password: string, salt: string) {
   return createHmac('sha256', salt).update(password).digest('hex')
 }
@@ -144,11 +140,6 @@ export function getStaffByUsername(username: string): StaffUser | undefined {
   return id ? s.staff[id] : undefined
 }
 
-export function getStaffByEmail(email: string): StaffUser | undefined {
-  const e = email.trim().toLowerCase()
-  return listStaffUsers().find(u => (u.email || '').toLowerCase() === e)
-}
-
 export function countAdmins(): number {
   return listStaffUsers().filter(u => u.role === 'admin').length
 }
@@ -157,7 +148,6 @@ export function setStaffRole(id: string, role: StaffRole) {
   const s = getStore()
   const u = s.staff[id]
   if (!u) throw new Error('Usuario no encontrado')
-  // Evitar quedarnos sin administradores
   if (u.role === 'admin' && role !== 'admin' && countAdmins() <= 1) {
     throw new Error('Debe quedar al menos un administrador')
   }
@@ -167,26 +157,26 @@ export function setStaffRole(id: string, role: StaffRole) {
 export function setStaffActive(id: string, active: boolean) {
   const u = getStaffById(id)
   if (!u) throw new Error('Usuario no encontrado')
-  // No permitir dejar inactivo al último admin
   if (u.role === 'admin' && !active && countAdmins() <= 1) {
     throw new Error('Debe quedar al menos un administrador activo')
   }
   u.active = active
 }
 
-export function updateStaffProfile(id: string, patch: Partial<Pick<StaffUser, 'name' | 'email' | 'username'>>) {
+export function updateStaffProfile(
+  id: string,
+  patch: Partial<Pick<StaffUser, 'name' | 'email' | 'username'>>
+) {
   const s = getStore()
   const u = s.staff[id]
   if (!u) throw new Error('Usuario no encontrado')
 
   if (typeof patch.name === 'string') u.name = patch.name.trim()
   if (typeof patch.email !== 'undefined') u.email = patch.email?.trim()
-
   if (typeof patch.username === 'string') {
     const newU = normalizeUsername(patch.username)
     if (newU && newU !== u.username) {
       if (s.staffByUsername[newU]) throw new Error('username ya existe')
-      // actualizar índice username -> id
       delete s.staffByUsername[u.username]
       u.username = newU
       s.staffByUsername[newU] = id
@@ -217,36 +207,23 @@ export function verifyStaffCredentials(username: string, password: string): Staf
   const user = getStaffByUsername(username)
   if (!user || !user.active) return null
 
-  // 1) Intento con scrypt (actual)
   const scryptHash = hashPasswordScrypt(password, user.salt).hash
   if (timingSafeEqual(Buffer.from(scryptHash, 'hex'), Buffer.from(user.passwordHash, 'hex'))) {
     return user
   }
-
-  // 2) Compatibilidad con hash legacy HMAC-SHA256
   const legacyHash = hashPasswordHmac(password, user.salt)
   if (timingSafeEqual(Buffer.from(legacyHash, 'hex'), Buffer.from(user.passwordHash, 'hex'))) {
     return user
   }
-
   return null
-}
-
-/** Login aceptando username **o** email */
-export function verifyStaffCredentialsByLogin(login: string, password: string): StaffUser | null {
-  const byUser = getStaffByUsername(login)
-  const byMail = getStaffByEmail(login)
-  const user = byUser || byMail
-  if (!user) return null
-  return verifyStaffCredentials(user.username, password)
 }
 
 /* =========================
  * Bootstrap admin (si falta)
  * ========================= */
 ;(function bootstrapAdmin() {
-  const existingAdmin = listStaffUsers().find(u => u.role === 'admin')
-  if (existingAdmin) return
+  const admins = listStaffUsers().filter(u => u.role === 'admin')
+  if (admins.length > 0) return
 
   const EMAIL = process.env.ADMIN_EMAIL || 'admin@podium.local'
   const USER = (EMAIL.split('@')[0] || 'admin').toLowerCase()
