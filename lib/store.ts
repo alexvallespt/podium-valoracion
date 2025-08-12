@@ -63,7 +63,6 @@ export function getStore(): Store {
 /* =========================
  * VISITS
  * ========================= */
-// lib/store.ts  (solo fragmento)
 export interface Visit {
   id: string
   createdAt: string
@@ -71,14 +70,10 @@ export interface Visit {
   patient?: { firstName?: string; lastName?: string; email?: string; phone?: string }
   intake?: Record<string, unknown>
   ddxJSON?: { ddx: Array<{ label: string; prob: number; why?: string }> }
-  consent?: {
-    email: string
-    text: string
-    signaturePng: string
-    at: string
-  }
-  assessment?: Record<string, unknown>   // <-- AÑADIDO
+  consent?: { email: string; text: string; signaturePng: string; at: string }
+  assessment?: Record<string, unknown>   // <-- añade esta línea
 }
+
 
 
 /* =========================
